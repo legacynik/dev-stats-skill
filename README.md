@@ -72,3 +72,10 @@ scripts/               — the actual implementation (stdlib only — pricing.py
                           makes one HTTP call via urllib, no pip installs)
 evals/evals.json       — example prompts this skill should handle
 ```
+
+## Credits
+
+Built by [Niccolò Franzin](https://github.com/legacynik) with Claude Code —
+paired on the design, every fix in `references/methodology.md` traces back
+to something caught and verified live during that session (not just assumed
+to work).
