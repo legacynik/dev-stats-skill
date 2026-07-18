@@ -1,6 +1,6 @@
 ---
 name: dev-stats
-description: Report personal dev productivity — active hours from local Claude Code and Codex CLI session transcripts, plus lines-of-code contributed across your repos via git log. Use whenever the user asks "how much did I code", wants a coding/productivity report, a monthly recap, hours-worked or lines-of-code numbers, or a shareable stats card of their own dev activity — even if they don't name this skill directly.
+description: Report personal dev productivity — active hours from local Claude Code and Codex CLI session transcripts, lines-of-code contributed across your repos via git log, and token usage with an estimated API-rate cost. Use whenever the user asks "how much did I code", "how many tokens did I use", wants a coding/productivity report, a monthly recap, hours-worked/lines-of-code/token numbers, or a shareable stats card of their own dev activity — even if they don't name this skill directly.
 allowed-tools: Bash(python3 *)
 disable-model-invocation: true
 ---
@@ -37,9 +37,18 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/dev_stats.py
 Common flags: `--vault-dir PATH` (folder containing the user's repos, default
 cwd), `--days N` / `--since YYYY-MM-DD [--until YYYY-MM-DD]` (time window),
 `--author EMAIL` (repeatable, adds identity aliases), `--exclude-repo NAME`
-(repeatable — e.g. a fork that isn't original work), `--no-codex`. Full flag
-reference, including `loc_stats.py`'s own excludes and period filters: see
+(repeatable — e.g. a fork that isn't original work), `--no-codex`,
+`--no-tokens` (skip token/cost accounting, faster). Full flag reference,
+including `loc_stats.py`'s own excludes and period filters: see
 `references/flags.md`.
+
+The report includes an **estimated $ cost** next to the token count, priced
+against LiteLLM's public pricing data. Always present it as an estimate at
+pay-as-you-go API rates — if the user is on a subscription plan (Claude
+Pro/Max, a flat Codex plan), this number is NOT what they actually paid, and
+saying otherwise would be actively misleading. See `references/methodology.md`
+for the full caveat, including what's NOT captured (Codex CLI exposes no
+cache-creation token count, so its cost estimate under-counts by that much).
 
 If the tool reports **"No author found"**: the user needs
 `git config --global user.email "you@example.com"` set once, or pass

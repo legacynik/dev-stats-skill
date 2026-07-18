@@ -1,5 +1,41 @@
 # Methodology — what each number means, and where it lies to you
 
+## Tokens and cost estimate
+
+Token counts come straight from each tool's own accounting, not a re-count:
+Claude Code's `message.usage` per assistant message (priced per-message, since
+one session can mix models — a Haiku subagent call inside a Sonnet session,
+for example), Codex CLI's cumulative `token_count` event (the LAST one per
+session file is that session's running total — no need to sum deltas).
+
+Cost is estimated against **LiteLLM's public, hourly-updated pricing JSON**
+(`scripts/pricing.py`) — the same source ccusage (the established Claude
+Code/Codex usage tool) uses, fetched directly instead of a hand-maintained
+table that would go stale. Two things this number is NOT:
+
+- **Not your actual bill if you're on a subscription plan** (Claude
+  Pro/Max, a flat-rate Codex plan, etc.) — it's what the same token volume
+  would cost at pay-as-you-go API rates. Present it labeled as an estimate,
+  every time, never as "what you paid."
+- **Not complete for Codex CLI.** The `token_count` event exposes
+  `input_tokens`, `cached_input_tokens` (a SUBSET of input_tokens, verified:
+  `input_tokens + output_tokens == total_tokens` on real data — billed as
+  fresh-input-minus-cached at the input rate, cached at the discount rate),
+  and `output_tokens` — but no cache-CREATION count. Codex sessions that
+  wrote a lot of new cache this session will under-estimate cost; there's no
+  way to recover that from this event, it's a real gap in the source data,
+  not something `token_stats.py` failed to parse.
+
+If a model name in the transcripts doesn't match anything in LiteLLM's
+table (exact match first, then the name with a trailing `-YYYYMMDD` date
+suffix stripped), that message/session's tokens are still counted in the
+token total, but its cost is silently excluded from the cost sum — a new or
+very recently released model not in LiteLLM's table yet will under-state
+the total cost, not error out. The aggregate cost line only goes fully
+"unavailable" when NOTHING could be priced at all (pricing fetch failed and
+there's no local cache) — partial coverage looks like a normal number, it
+just isn't complete. Don't present it as exact.
+
 ## `git log --all`, not just the checked-out branch
 
 `loc_stats.py` walks every local branch/ref (`--all`), not only `HEAD`. On a

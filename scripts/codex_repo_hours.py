@@ -9,6 +9,7 @@ so there is no folder-name substring trick available here.
 """
 import json
 
+from repo_match import match_repo_by_cwd
 from session_duration_stats import aggregate as session_aggregate
 
 
@@ -27,15 +28,6 @@ def session_cwd(path):
                     return cwd
     except Exception:
         return None
-    return None
-
-
-def match_repo_by_cwd(cwd, repo_paths):
-    if not cwd:
-        return None
-    for path in sorted(repo_paths, key=len, reverse=True):
-        if cwd == path or cwd.startswith(path + "/"):
-            return path.rsplit("/", 1)[-1]
     return None
 
 

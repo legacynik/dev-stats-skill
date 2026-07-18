@@ -8,6 +8,7 @@
 | `--projects-dir PATH` | `~/.claude/projects` | Claude Code session-log root |
 | `--codex-dir PATH` | `~/.codex/sessions` | Codex CLI session-log root |
 | `--no-codex` | off | Skip Codex CLI entirely |
+| `--no-tokens` | off | Skip token/cost accounting (faster — reads only timestamps, not full file content) |
 | `--cap-minutes N` | 5 | Gap-capping threshold for active-hours estimate |
 | `--author EMAIL` | git global identity | Repeatable; add aliases for commits under other emails/names |
 | `--name STR` | last `--author` value | Display name for the report header |
@@ -35,6 +36,15 @@ above, plus:
 | `--archive-dir PATH` | `~/.dev-stats-archive` | Destination — must not be inside a git repo |
 | `--dry-run` | off | Report what would be copied, never write, even with `--yes` |
 | `--force` | off | Override the git-repo-destination refusal (not recommended — see `references/privacy.md`) |
+
+## Pricing cache (`pricing.py`)
+
+Not a CLI of its own — `dev_stats.py` calls it automatically unless
+`--no-tokens` is set. Caches LiteLLM's pricing JSON at
+`~/.cache/dev-stats-skill/litellm-pricing.json`, refetched if older than 24h;
+falls back to a stale cache (or gives up gracefully, cost becomes
+unavailable, token counts stay intact) if the network is down. Delete that
+file to force a refetch on the next run.
 
 ## Worked example: excluding a project-specific noise pattern
 

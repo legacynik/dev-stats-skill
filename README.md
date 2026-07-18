@@ -1,9 +1,10 @@
 # dev-stats
 
 A Claude Code skill that reports personal dev productivity: active hours
-from your local Claude Code and Codex CLI session transcripts, plus lines of
-code contributed across your repos via `git log`. Runs entirely locally —
-nothing is uploaded anywhere.
+from your local Claude Code and Codex CLI session transcripts, lines of
+code contributed across your repos via `git log`, and token usage with an
+estimated cost. Runs entirely locally — nothing is uploaded anywhere, pricing
+lookup is the only network call and it's optional (`--no-tokens` skips it).
 
 ## What it measures
 
@@ -13,6 +14,11 @@ nothing is uploaded anywhere.
   `references/sources.md`.
 - **Lines of code** — `git log --all --numstat` per repo, scoped to your git
   identity. Walks every local branch, not just the checked-out one.
+- **Tokens + estimated cost** — from the same session logs (Claude Code's
+  per-message `usage`, Codex CLI's cumulative `token_count` event), priced
+  against LiteLLM's public pricing data (the same source ccusage uses).
+  Always an estimate at pay-as-you-go API rates — **not your bill** if
+  you're on a subscription plan.
 
 Neither source is authoritative on its own — this is a personal trend
 estimate, not a payroll ledger. Full detail on what each number can and
@@ -62,6 +68,7 @@ references/            — loaded on demand, not upfront
   methodology.md        — what each number means, common misreadings
   flags.md              — full CLI reference
   privacy.md             — archive step, encryption
-scripts/               — the actual implementation (no dependencies)
+scripts/               — the actual implementation (stdlib only — pricing.py
+                          makes one HTTP call via urllib, no pip installs)
 evals/evals.json       — example prompts this skill should handle
 ```

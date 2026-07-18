@@ -26,6 +26,11 @@
       "id": 5,
       "prompt": "Set this up so I don't lose my session history — I've heard Claude Code deletes old sessions.",
       "expected_output": "Skill explains that retention depends on the install's own settings (doesn't assert a specific universal deletion period), offers to run backup_sessions.py, and — if asked about extra security — points to references/privacy.md rather than inventing an encryption setup on the user's behalf silently."
+    },
+    {
+      "id": 6,
+      "prompt": "How many tokens have I burned this week, and what would that have cost on the API?",
+      "expected_output": "Skill runs dev_stats.py with the token/cost accounting on (default, not --no-tokens), reports total tokens (input/output/cache-read breakdown) and an estimated $ cost from LiteLLM pricing — labeled clearly as a pay-as-you-go API estimate, explicitly NOT the user's actual subscription bill if they're on a Claude/Codex plan rather than pure API billing."
     }
   ]
 }
