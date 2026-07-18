@@ -1,6 +1,6 @@
 {
   "name": "dev-stats",
-  "description": "Personal dev productivity report: active hours from local Claude Code + Codex CLI session transcripts, plus lines-of-code contributed via git log.",
-  "version": "1.0.0",
+  "description": "Personal dev productivity report: active hours from local Claude Code + Codex CLI session transcripts, lines-of-code contributed via git log, and token usage with an estimated cost.",
+  "version": "1.1.0",
   "author": { "name": "Niccolò Franzin" }
 }

@@ -1,8 +1,7 @@
 ---
 name: dev-stats
 description: Report personal dev productivity — active hours from local Claude Code and Codex CLI session transcripts, lines-of-code contributed across your repos via git log, and token usage with an estimated API-rate cost. Use whenever the user asks "how much did I code", "how many tokens did I use", wants a coding/productivity report, a monthly recap, hours-worked/lines-of-code/token numbers, or a shareable stats card of their own dev activity — even if they don't name this skill directly.
-allowed-tools: Bash(python3 *)
-disable-model-invocation: true
+allowed-tools: Read, Bash(python3 *)
 ---
 
 # dev-stats
