@@ -1,0 +1,31 @@
+{
+  "skill_name": "dev-stats",
+  "note": "Documented usage examples, not a scored benchmark suite — dev-stats wraps deterministic scripts (git log, timestamp math), so the thing worth checking per change is 'does the script still run and produce the expected shape of output', not subjective output quality. Run these by hand after a script change.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "How much did I code this month? I use Claude Code and Codex.",
+      "expected_output": "Skill offers to archive session transcripts first, then runs dev_stats.py with a --days ~30 window, reporting active hours (Claude Code + Codex CLI combined) and LOC (added/removed/net + commits) with a per-repo breakdown."
+    },
+    {
+      "id": 2,
+      "prompt": "Give me a shareable stats card of my coding activity for the last 44 days, repo names blurred.",
+      "expected_output": "Skill runs dev_stats.py --days 44, then builds a presentational artifact (not just terminal output) summarizing the numbers, with repo names visually obscured per the request — the underlying data comes from the skill's scripts, the presentation is a separate step."
+    },
+    {
+      "id": 3,
+      "prompt": "One of my repos shows way more lines than hours — is the tool broken?",
+      "expected_output": "Skill does NOT assume a bug. It investigates by checking what files actually drove the line count (git log --numstat, sum by file) before concluding anything — per references/methodology.md, this is very often a real, explicable pattern (scraped/generated data committed alongside real code, or a repo-name mismatch from misreading a report), not a measurement error."
+    },
+    {
+      "id": 4,
+      "prompt": "I don't have Codex CLI installed, just Claude Code.",
+      "expected_output": "dev_stats.py detects the missing ~/.codex/sessions directory (os.path.isdir check) and silently skips that source rather than erroring — report still runs with Claude Code hours only."
+    },
+    {
+      "id": 5,
+      "prompt": "Set this up so I don't lose my session history — I've heard Claude Code deletes old sessions.",
+      "expected_output": "Skill explains that retention depends on the install's own settings (doesn't assert a specific universal deletion period), offers to run backup_sessions.py, and — if asked about extra security — points to references/privacy.md rather than inventing an encryption setup on the user's behalf silently."
+    }
+  ]
+}

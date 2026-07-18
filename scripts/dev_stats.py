@@ -24,6 +24,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 from codex_repo_hours import codex_hours_per_repo
+from loc_stats import DEFAULT_EXCLUDE as DEFAULT_LOC_EXCLUDE
 from loc_stats import aggregate as loc_aggregate, default_authors, find_repos
 from session_duration_stats import aggregate as session_aggregate
 
@@ -149,6 +150,9 @@ def main():
     ap.add_argument("--author", action="append", default=None)
     ap.add_argument("--name", default=None, help="display name for the header (default: git config user.name)")
     ap.add_argument("--exclude-repo", action="append", default=None)
+    ap.add_argument("--exclude-glob", action="append", default=None,
+                     help="repeatable; extra LOC file patterns to exclude beyond the universal defaults")
+    ap.add_argument("--no-exclude", action="store_true", help="count generated files too (raw LOC numbers)")
     ap.add_argument("--days", type=int, default=None, help="only the last N days")
     ap.add_argument("--since", default=None, help="YYYY-MM-DD")
     ap.add_argument("--until", default=None, help="YYYY-MM-DD")
@@ -167,7 +171,8 @@ def main():
 
     print("Scanning sessions + repos...", file=sys.stderr)
     loc_period = (args.since or (since.date().isoformat() if since else None), args.until or until)
-    loc_result = loc_aggregate(args.vault_dir, authors, loc_period, repo_exclude=args.exclude_repo)
+    loc_exclude = [] if args.no_exclude else (DEFAULT_LOC_EXCLUDE + (args.exclude_glob or []))
+    loc_result = loc_aggregate(args.vault_dir, authors, loc_period, loc_exclude, args.exclude_repo)
 
     has_claude = os.path.isdir(args.projects_dir)
     has_codex = not args.no_codex and os.path.isdir(args.codex_dir)
