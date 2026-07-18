@@ -43,7 +43,9 @@ def fetch_pricing(cache_path=DEFAULT_CACHE_PATH, max_age_hours=24, timeout=10):
 
 
 def lookup_model_pricing(model, pricing_data):
-    if not pricing_data or not model:
+    # isinstance guard: a corrupted cache file or an unexpected upstream JSON
+    # shape (e.g. a list) would otherwise crash every caller's .get(model)
+    if not model or not isinstance(pricing_data, dict):
         return None
     if model in pricing_data:
         return pricing_data[model]

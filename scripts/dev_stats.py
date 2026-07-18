@@ -45,6 +45,9 @@ def resolve_period(args):
         return since, None
     since = datetime.fromisoformat(args.since).replace(tzinfo=timezone.utc) if args.since else None
     until = datetime.fromisoformat(args.until).replace(tzinfo=timezone.utc) if args.until else None
+    if since and until and since > until:
+        print(f"! --since ({since.date()}) is after --until ({until.date()}) — "
+              "the window is empty, that's why everything below will read zero.", file=sys.stderr)
     return since, until
 
 
@@ -117,7 +120,7 @@ def stat_line(label, value, color=CYAN, sub=""):
 
 
 def bar(value, max_value, width=BAR_WIDTH):
-    filled = int(width * value / max_value) if max_value else 0
+    filled = min(width, int(width * value / max_value)) if max_value else 0
     return "█" * filled + "░" * (width - filled)
 
 

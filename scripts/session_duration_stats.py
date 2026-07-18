@@ -19,7 +19,7 @@ import glob
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def load_timestamps(path):
@@ -38,7 +38,10 @@ def load_timestamps(path):
                 if not ts:
                     continue
                 try:
-                    timestamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    if dt.tzinfo is None:  # no offset in the source string — assume UTC
+                        dt = dt.replace(tzinfo=timezone.utc)  # else sort()/period-filter crash on naive-vs-aware compare
+                    timestamps.append(dt)
                 except Exception:
                     continue
     except Exception:
