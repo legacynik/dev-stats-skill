@@ -103,6 +103,7 @@ def aggregate(vault_dir, authors, period=None, exclude=DEFAULT_EXCLUDE, repo_exc
     return {
         "vault_dir": vault_dir,
         "authors": authors,
+        "repos_scanned": len(repos),
         "total_added": sum(r["added"] for r in per_repo),
         "total_removed": sum(r["removed"] for r in per_repo),
         "total_commits": sum(r["commits"] for r in per_repo),
@@ -132,7 +133,7 @@ def main():
     result = aggregate(args.vault_dir, authors, (args.since, args.until), exclude, args.exclude_repo)
     excluded = sum(r["excluded_lines"] for r in result["per_repo"])
     print(f"Author(s): {', '.join(authors)}", file=sys.stderr)
-    print(f"Repos scanned: {len(find_repos(args.vault_dir, args.exclude_repo))}, "
+    print(f"Repos scanned: {result['repos_scanned']}, "
           f"with matching commits: {len(result['per_repo'])}", file=sys.stderr)
     if excluded:
         print(f"Excluded (generated files): {excluded:,} lines", file=sys.stderr)

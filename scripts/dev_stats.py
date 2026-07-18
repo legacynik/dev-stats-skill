@@ -12,8 +12,9 @@ Per-repo hours/tokens from Claude Code are matched by substring: Claude Code
 encodes a session's cwd into its project-folder name by replacing "/" and " "
 with "-", so a repo label ("My-Repo", from "My Repo") is looked up as a
 substring of that folder name. Codex CLI hours/tokens are matched via the
-exact cwd each rollout file records. Both are best-effort — approximate, not
-a ledger.
+exact cwd each rollout file records — resolved once in codex_hours_per_repo
+and reused for tokens, not re-read per file. Both are best-effort —
+approximate, not a ledger.
 
 Usage:
     python3 dev_stats.py [--vault-dir PATH] [--cap-minutes N] [--no-tokens]
@@ -22,15 +23,16 @@ Usage:
 import argparse
 import os
 import sys
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-from codex_repo_hours import codex_hours_per_repo, session_cwd
+from codex_repo_hours import codex_hours_per_repo
 from loc_stats import DEFAULT_EXCLUDE as DEFAULT_LOC_EXCLUDE
 from loc_stats import aggregate as loc_aggregate, default_authors, find_repos
 from pricing import fetch_pricing
-from repo_match import labels_to_names, match_repo, match_repo_by_cwd
+from repo_match import labels_to_names, match_repo
 from session_duration_stats import aggregate as session_aggregate
-from token_stats import EMPTY_TOKENS, claude_code_session_stats, codex_session_stats, tokens_for_files
+from token_stats import EMPTY_TOKENS, claude_code_session_stats, codex_session_stats
 
 RESET, BOLD, DIM = "\033[0m", "\033[1m", "\033[2m"
 CYAN, GREEN, YELLOW, MAGENTA, BLUE = "\033[36m", "\033[32m", "\033[33m", "\033[35m", "\033[34m"
@@ -46,22 +48,23 @@ def resolve_period(args):
     return since, until
 
 
-def hours_per_repo(per_session, vault_dir, projects_dir_prefix_len, repo_exclude=None):
-    names_by_label = labels_to_names(find_repos(vault_dir, repo_exclude))
+def _claude_repo(file, prefix_len, names_by_label):
+    folder = file[prefix_len:].split("/", 1)[0]
+    return match_repo(folder, names_by_label)
+
+
+def hours_per_repo(per_session, prefix_len, names_by_label):
     totals = {}
     for s in per_session:
-        folder = s["file"][projects_dir_prefix_len:].split("/", 1)[0]
-        repo = match_repo(folder, names_by_label)
+        repo = _claude_repo(s["file"], prefix_len, names_by_label)
         totals[repo] = totals.get(repo, 0.0) + s["active_seconds"]
     return totals
 
 
-def claude_code_tokens_per_repo(per_session, vault_dir, projects_dir_prefix_len, pricing, repo_exclude=None):
-    names_by_label = labels_to_names(find_repos(vault_dir, repo_exclude))
+def claude_code_tokens_per_repo(per_session, prefix_len, names_by_label, pricing):
     totals, costs = {}, {}
     for s in per_session:
-        folder = s["file"][projects_dir_prefix_len:].split("/", 1)[0]
-        repo = match_repo(folder, names_by_label)
+        repo = _claude_repo(s["file"], prefix_len, names_by_label)
         tokens, cost = claude_code_session_stats(s["file"], pricing)
         totals[repo] = _add_tokens(totals.get(repo, dict(EMPTY_TOKENS)), tokens)
         if cost is not None:
@@ -69,15 +72,15 @@ def claude_code_tokens_per_repo(per_session, vault_dir, projects_dir_prefix_len,
     return totals, costs
 
 
-def codex_tokens_per_repo(per_session, repo_paths, pricing):
+def codex_tokens_per_repo(per_session, pricing):
+    """per_session entries already carry "repo" — codex_hours_per_repo resolved
+    it once from each file's cwd; re-reading it here would cost a second pass."""
     totals, costs = {}, {}
     for s in per_session:
-        cwd = session_cwd(s["file"])
-        repo = match_repo_by_cwd(cwd, repo_paths) or "(other/unmatched)"
         tokens, cost = codex_session_stats(s["file"], pricing)
-        totals[repo] = _add_tokens(totals.get(repo, dict(EMPTY_TOKENS)), tokens)
+        totals[s["repo"]] = _add_tokens(totals.get(s["repo"], dict(EMPTY_TOKENS)), tokens)
         if cost is not None:
-            costs[repo] = costs.get(repo, 0.0) + cost
+            costs[s["repo"]] = costs.get(s["repo"], 0.0) + cost
     return totals, costs
 
 
@@ -86,10 +89,7 @@ def _add_tokens(a, b):
 
 
 def merge_numeric(a, b):
-    merged = dict(a)
-    for k, v in b.items():
-        merged[k] = merged.get(k, 0) + v
-    return merged
+    return dict(Counter(a) + Counter(b))
 
 
 def merge_token_dicts(a, b):
@@ -97,6 +97,10 @@ def merge_token_dicts(a, b):
     for repo, tokens in b.items():
         merged[repo] = _add_tokens(merged.get(repo, dict(EMPTY_TOKENS)), tokens)
     return merged
+
+
+def sum_tokens(by_repo):
+    return {k: sum(t[k] for t in by_repo.values()) for k in EMPTY_TOKENS}
 
 
 def box(title, width=64):
@@ -235,11 +239,12 @@ def main():
     if has_claude:
         session_result = session_aggregate(args.projects_dir, args.cap_minutes, period=(since, until))
         prefix_len = len(args.projects_dir.rstrip("/")) + 1
-        hours_by_repo = hours_per_repo(session_result["per_session"], args.vault_dir, prefix_len, args.exclude_repo)
+        names_by_label = labels_to_names(find_repos(args.vault_dir, args.exclude_repo))
+        hours_by_repo = hours_per_repo(session_result["per_session"], prefix_len, names_by_label)
         if not args.no_tokens:
             tokens_by_repo, cc_costs = claude_code_tokens_per_repo(
-                session_result["per_session"], args.vault_dir, prefix_len, pricing, args.exclude_repo)
-            total_tokens = {k: sum(t[k] for t in tokens_by_repo.values()) for k in EMPTY_TOKENS}
+                session_result["per_session"], prefix_len, names_by_label, pricing)
+            total_tokens = sum_tokens(tokens_by_repo)
             total_cost = sum(cc_costs.values())
             cost_known = cost_known or bool(cc_costs)
 
@@ -259,10 +264,9 @@ def main():
         print(f"  + Codex CLI: {codex_result['total_active_hours']}h active, "
               f"{codex_result['sessions_with_data']} sessions", file=sys.stderr)
         if not args.no_tokens:
-            codex_tokens, codex_costs = codex_tokens_per_repo(codex_result["per_session"], repo_paths, pricing)
+            codex_tokens, codex_costs = codex_tokens_per_repo(codex_result["per_session"], pricing)
             tokens_by_repo = merge_token_dicts(tokens_by_repo, codex_tokens)
-            codex_total = {k: sum(t[k] for t in codex_tokens.values()) for k in EMPTY_TOKENS}
-            total_tokens = merge_numeric(total_tokens, codex_total) if total_tokens else codex_total
+            total_tokens = merge_numeric(total_tokens, sum_tokens(codex_tokens)) if total_tokens else sum_tokens(codex_tokens)
             total_cost = (total_cost or 0.0) + sum(codex_costs.values())
             cost_known = cost_known or bool(codex_costs)
 

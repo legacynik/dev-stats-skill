@@ -102,18 +102,3 @@ def codex_session_stats(path, pricing_data):
     cost = estimate_cost_usd(entry, tokens["input_tokens"], tokens["output_tokens"],
                               0, tokens["cache_read_tokens"])
     return tokens, cost
-
-
-def tokens_for_files(files, pricing_data, session_stats_fn):
-    """files: paths already period-filtered by the caller (reuse the same
-    per_session list hours accounting already produced — don't re-filter)."""
-    per_file, total_tokens, total_cost = {}, dict(EMPTY_TOKENS), 0.0
-    cost_known_any = False
-    for f in files:
-        tokens, cost = session_stats_fn(f, pricing_data)
-        per_file[f] = {"tokens": tokens, "cost": cost}
-        total_tokens = _add(total_tokens, tokens)
-        if cost is not None:
-            total_cost += cost
-            cost_known_any = True
-    return per_file, total_tokens, (total_cost if cost_known_any else None)

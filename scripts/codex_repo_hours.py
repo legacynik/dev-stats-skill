@@ -5,7 +5,9 @@ Reuses session_duration_stats' timestamp/gap-capping math (Codex rollout files
 carry the same top-level "timestamp" field) for the totals, then reads each
 file's session_meta.cwd line separately for per-repo attribution — Codex
 organizes sessions by date, not by cwd-encoded folder name like Claude Code,
-so there is no folder-name substring trick available here.
+so there is no folder-name substring trick available here. The resolved repo
+is written back onto each per_session entry (`s["repo"]`) so a caller that
+also wants token accounting doesn't have to re-read the same file's cwd.
 """
 import json
 
@@ -37,5 +39,6 @@ def codex_hours_per_repo(sessions_dir, repo_paths, cap_minutes=5.0, period=None)
     for s in result["per_session"]:
         cwd = session_cwd(s["file"])
         repo = match_repo_by_cwd(cwd, repo_paths) or "(other/unmatched)"
+        s["repo"] = repo
         totals[repo] = totals.get(repo, 0.0) + s["active_seconds"]
     return totals, result
