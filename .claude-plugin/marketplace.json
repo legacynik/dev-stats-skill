@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dev-stats-skill",
+  "metadata": {
+    "description": "Personal dev productivity report for Claude Code — active hours + lines of code, entirely local."
+  },
+  "owner": {
+    "name": "Niccolò Franzin",
+    "url": "https://github.com/legacynik"
+  },
+  "plugins": [
+    {
+      "name": "dev-stats",
+      "description": "Report personal dev productivity: active hours from local Claude Code and Codex CLI session transcripts, plus lines-of-code contributed across your repos via git log. Runs entirely locally, no dependencies beyond Python 3 stdlib.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Niccolò Franzin",
+        "url": "https://github.com/legacynik"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/legacynik/dev-stats-skill",
+      "tags": ["productivity", "stats", "git", "loc", "dev-log"]
+    }
+  ]
+}
